@@ -1,0 +1,1157 @@
+<!--
+================================================================
+  GT Robot Helper
+  © 2026 רויטל פלד / Revital Peled. All Rights Reserved.
+
+  כלי עזר לטכנאי GimlaTech לאבחון תקלות בשואבי רובוט.
+  נבנה בסיוע Claude AI | Anthropic
+
+  ✋ אין למכור, לשכפל או לטעון לבעלות על כלי זה.
+  ✋ בשיתוף — יש לשמור שם היוצרת.
+  ✋ היוצרת אינה אחראית לשגיאות AI.
+
+  יצרה: רויטל פלד | נבנה בסיוע Claude AI | 2026
+================================================================
+-->
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GT Robot Helper | GimlaTech</title>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:      #0f172a;
+  --surface: #1e293b;
+  --surface2:#273549;
+  --accent:  #38bdf8;
+  --accent2: #818cf8;
+  --success: #34d399;
+  --text:    #f1f5f9;
+  --muted:   #94a3b8;
+  --border:  #334155;
+  --wa:      #25d366;
+  --amber:   #fbbf24;
+  --red:     #fca5a5;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Heebo', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+/* ══ DESKTOP ══ */
+.page-wrap { display: flex; min-height: 100vh; }
+.sidebar   { display: none; }
+.app {
+  width: 100%; max-width: 520px; min-height: 100vh;
+  display: flex; flex-direction: column;
+  margin: 0 auto; position: relative;
+}
+
+@media (min-width: 900px) {
+  body { background: #070f1d; }
+  .page-wrap { align-items: stretch; justify-content: center; }
+  .sidebar {
+    display: flex; flex-direction: column; justify-content: center;
+    width: 340px; flex-shrink: 0;
+    padding: 48px 40px;
+    background: linear-gradient(160deg, #0f1e35 0%, #0a1628 100%);
+    border-left: 1px solid #1e3a5f;
+  }
+  .sidebar-logo { font-size: 28px; font-weight: 900; margin-bottom: 6px; }
+  .sidebar-logo span { color: var(--accent); }
+  .sidebar-tag {
+    display: inline-block; background: rgba(56,189,248,0.12);
+    border: 1px solid rgba(56,189,248,0.3); color: var(--accent);
+    font-size: 11px; font-weight: 700; padding: 4px 12px;
+    border-radius: 20px; margin-bottom: 24px;
+  }
+  .sidebar-desc { font-size: 14px; color: #94a3b8; line-height: 1.8; margin-bottom: 28px; }
+  .sidebar-steps { display: flex; flex-direction: column; gap: 14px; }
+  .sidebar-step  { display: flex; align-items: center; gap: 12px; }
+  .sidebar-step-num {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: rgba(56,189,248,0.15); border: 1.5px solid rgba(56,189,248,0.4);
+    color: var(--accent); font-size: 12px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .sidebar-step-text { font-size: 13px; color: #64748b; }
+  .app {
+    max-width: 480px; flex-shrink: 0;
+    border-right: 1px solid #1e293b; border-left: 1px solid #1e293b;
+    background: var(--bg);
+  }
+  .modal-box    { border-radius: 16px; margin-bottom: 40px; }
+  .modal-overlay{ align-items: center; }
+}
+
+/* ══ HEADER ══ */
+.header {
+  padding: 18px 18px 14px;
+  background: linear-gradient(180deg, #0f172a 0%, transparent 100%);
+  position: sticky; top: 0; z-index: 10;
+  backdrop-filter: blur(12px);
+}
+.logo-row { display: flex; align-items: center; gap: 10px; }
+.logo-icon { font-size: 24px; }
+.logo-text { font-size: 18px; font-weight: 900; letter-spacing: -0.5px; }
+.logo-text span { color: var(--accent); }
+.about-link {
+  margin-right: auto; font-size: 10px; color: #1e3a5f;
+  font-weight: 500; cursor: pointer; background: none; border: none;
+  font-family: 'Heebo', sans-serif;
+}
+.about-link:hover { color: var(--muted); }
+.breadcrumb { display: flex; align-items: center; gap: 6px; margin-top: 10px; min-height: 22px; }
+.crumb     { font-size: 12px; color: var(--muted); }
+.crumb.active { color: var(--accent); font-weight: 700; }
+.crumb-sep { color: var(--border); font-size: 11px; }
+
+/* ══ BODY ══ */
+.body { flex: 1; padding: 4px 18px 100px; overflow-y: auto; }
+.screen { display: none; animation: fadeUp 0.25s ease; }
+.screen.active { display: block; }
+@keyframes fadeUp {
+  from { opacity:0; transform: translateY(12px); }
+  to   { opacity:1; transform: translateY(0); }
+}
+
+/* ══ SCREEN 1 — בחירת מותג ══ */
+.screen-title { font-size: 22px; font-weight: 900; margin-bottom: 6px; }
+.screen-sub   { font-size: 14px; color: var(--muted); margin-bottom: 20px; }
+.brand-grid   { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.brand-card {
+  background: var(--surface); border: 2px solid var(--border);
+  border-radius: 18px; padding: 18px 12px;
+  cursor: pointer; text-align: center; transition: all 0.18s;
+}
+.brand-card:hover, .brand-card.sel {
+  border-color: var(--accent); background: var(--surface2);
+  transform: translateY(-2px); box-shadow: 0 8px 24px rgba(56,189,248,0.15);
+}
+.brand-card .b-icon  { font-size: 28px; margin-bottom: 8px; display: block; }
+.brand-card .b-label { font-size: 13px; font-weight: 700; }
+.brand-card .b-sub   { font-size: 11px; color: var(--muted); margin-top: 3px; }
+
+/* ══ SCREEN 2 — בחירת דגם ══ */
+.model-list { display: flex; flex-direction: column; gap: 8px; }
+.model-btn {
+  background: var(--surface); border: 2px solid var(--border);
+  border-radius: 14px; padding: 14px 16px;
+  cursor: pointer; display: flex; align-items: center; gap: 12px;
+  transition: all 0.15s; color: var(--text); width: 100%; text-align: right;
+  font-family: 'Heebo', sans-serif;
+}
+.model-btn:hover, .model-btn.sel {
+  border-color: var(--accent2); background: var(--surface2);
+  box-shadow: 0 4px 16px rgba(129,140,248,0.12);
+}
+.model-btn .m-icon  { font-size: 20px; flex-shrink: 0; }
+.model-btn .m-label { font-size: 15px; font-weight: 700; }
+.model-btn .m-year  { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+/* ══ SCREEN 3 — שאלה ══ */
+.error-input-row {
+  background: var(--surface); border: 2px solid var(--border);
+  border-radius: 14px; display: flex; align-items: center;
+  gap: 10px; padding: 4px 14px; margin-bottom: 10px;
+  transition: border-color 0.2s;
+}
+.error-input-row:focus-within { border-color: var(--red); }
+.error-input-row .err-label { font-size: 11px; color: var(--muted); white-space: nowrap; }
+.error-input-row input {
+  flex: 1; background: none; border: none; outline: none;
+  font-size: 15px; font-family: 'Heebo', sans-serif;
+  color: var(--text); padding: 10px 0; direction: ltr; text-align: left;
+}
+.error-input-row input::placeholder { color: var(--border); }
+
+.search-box {
+  background: var(--surface); border: 2px solid var(--border);
+  border-radius: 16px; display: flex; align-items: center;
+  gap: 10px; padding: 4px 14px 4px 8px; margin-bottom: 14px;
+  transition: border-color 0.2s;
+}
+.search-box:focus-within { border-color: var(--accent); }
+.search-box input {
+  flex: 1; background: none; border: none; outline: none;
+  font-size: 16px; font-family: 'Heebo', sans-serif;
+  color: var(--text); padding: 12px 0; direction: rtl;
+}
+.search-box input::placeholder { color: var(--muted); }
+.search-go {
+  background: var(--accent); border: none; border-radius: 10px;
+  width: 38px; height: 38px; display: flex; align-items: center;
+  justify-content: center; cursor: pointer; font-size: 18px;
+  flex-shrink: 0; transition: background 0.15s;
+}
+.search-go:hover    { background: #7dd3fc; }
+.search-go:disabled { background: var(--border); cursor: default; }
+
+/* תגי קטגוריה */
+.topics-row { display: flex; gap: 7px; flex-wrap: wrap; margin-bottom: 14px; }
+.topic-chip {
+  padding: 5px 13px; border-radius: 20px;
+  border: 1.5px solid var(--border); background: var(--surface);
+  color: var(--muted); font-size: 12px; font-weight: 700;
+  cursor: pointer; transition: all 0.15s; white-space: nowrap;
+  font-family: 'Heebo', sans-serif;
+}
+.topic-chip:hover  { border-color: var(--accent2); color: var(--accent2); }
+.topic-chip.active { background: var(--accent2); border-color: var(--accent2); color: white; }
+
+/* תוצאות מאגר */
+.results-label { font-size: 12px; color: var(--muted); margin-bottom: 10px; font-weight: 700; }
+.result-card {
+  background: var(--surface); border: 1.5px solid var(--border);
+  border-radius: 14px; padding: 14px 16px; margin-bottom: 8px;
+  cursor: pointer; transition: all 0.15s; text-align: right;
+}
+.result-card:hover { border-color: var(--accent2); background: var(--surface2); }
+.result-card .r-title { font-weight: 700; font-size: 14px; margin-bottom: 4px; }
+.result-card .r-meta  { font-size: 12px; color: var(--muted); }
+.result-card mark {
+  background: rgba(56,189,248,0.25); color: var(--accent);
+  border-radius: 3px; padding: 0 2px; font-style: normal;
+}
+
+/* AI תשובה */
+.ai-box {
+  background: linear-gradient(135deg, #0c2340 0%, #1a1040 100%);
+  border: 1.5px solid rgba(129,140,248,0.4);
+  border-radius: 16px; padding: 18px; margin-bottom: 14px;
+  position: relative; overflow: hidden;
+}
+.ai-box::before {
+  content: ''; position: absolute; top: 0; right: 0;
+  width: 120px; height: 120px;
+  background: radial-gradient(circle, rgba(129,140,248,0.15) 0%, transparent 70%);
+  pointer-events: none;
+}
+.ai-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 14px; }
+.ai-badge  { background: var(--accent2); color: white; font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 20px; }
+.db-badge  {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: rgba(52,211,153,0.15); border: 1px solid rgba(52,211,153,0.4);
+  color: var(--success); font-size: 11px; font-weight: 700;
+  padding: 3px 10px; border-radius: 20px; margin-bottom: 12px;
+}
+.err-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: rgba(252,165,165,0.12); border: 1px solid rgba(252,165,165,0.3);
+  color: var(--red); font-size: 11px; font-weight: 700;
+  padding: 3px 10px; border-radius: 20px; margin-bottom: 12px;
+}
+.copy-btn {
+  background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 8px; color: var(--muted); font-size: 12px; font-weight: 700;
+  padding: 4px 12px; cursor: pointer; font-family: 'Heebo', sans-serif;
+  transition: all 0.15s; white-space: nowrap;
+}
+.copy-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+.ai-typing { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 13px; }
+.dots span {
+  display: inline-block; width: 6px; height: 6px;
+  background: var(--accent2); border-radius: 50%;
+  animation: bounce 1.2s infinite; margin: 0 2px;
+}
+.dots span:nth-child(2) { animation-delay: 0.2s; }
+.dots span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes bounce { 0%,80%,100%{transform:translateY(0)} 40%{transform:translateY(-6px)} }
+
+.ai-step { display: flex; gap: 12px; margin-bottom: 10px; align-items: flex-start; }
+.ai-step-num {
+  background: var(--accent2); color: white; border-radius: 50%;
+  width: 24px; height: 24px; display: flex; align-items: center;
+  justify-content: center; font-size: 12px; font-weight: 700;
+  flex-shrink: 0; margin-top: 2px;
+}
+.ai-step-text { font-size: 14px; color: #cbd5e1; line-height: 1.65; }
+.ai-tip {
+  background: rgba(251,191,36,0.1); border-right: 3px solid var(--amber);
+  padding: 10px 12px; border-radius: 8px; font-size: 13px;
+  color: #fde68a; margin-top: 12px;
+}
+.ai-warn {
+  background: rgba(252,165,165,0.08); border-right: 3px solid var(--red);
+  padding: 8px 12px; border-radius: 8px; font-size: 13px;
+  color: var(--red); margin-top: 8px;
+}
+.ai-error { color: var(--red); font-size: 14px; }
+
+/* כפתורים */
+.btn-back {
+  background: none; border: none; color: var(--accent);
+  font-size: 13px; font-weight: 700; cursor: pointer;
+  padding: 0; margin-bottom: 18px; font-family: 'Heebo', sans-serif;
+  display: flex; align-items: center; gap: 4px;
+}
+.btn-back:hover { color: #7dd3fc; }
+.btn-reset {
+  width: 100%; padding: 13px; border-radius: 14px;
+  background: var(--surface); border: 1.5px solid var(--border);
+  color: var(--muted); font-size: 14px; font-weight: 700;
+  cursor: pointer; font-family: 'Heebo', sans-serif;
+  transition: all 0.15s; margin-top: 8px;
+}
+.btn-reset:hover { border-color: var(--accent); color: var(--accent); }
+
+/* WhatsApp */
+.wa-bar {
+  position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+  width: 100%; max-width: 480px;
+  background: rgba(15,23,42,0.95); backdrop-filter: blur(12px);
+  border-top: 1px solid var(--border); padding: 10px 18px; z-index: 20;
+}
+.wa-btn {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  background: var(--wa); color: white; text-decoration: none;
+  padding: 12px; border-radius: 14px; font-weight: 700; font-size: 15px;
+  font-family: 'Heebo', sans-serif; transition: background 0.15s; cursor: pointer;
+  border: none; width: 100%;
+}
+.wa-btn:hover { background: #20b858; }
+.wa-share-btn {
+  width: 100%; display: flex; align-items: center; justify-content: center; gap: 7px;
+  background: #1a3a28; border: 1.5px solid var(--wa); color: var(--wa);
+  border-radius: 12px; padding: 11px 10px; font-size: 13px; font-weight: 700;
+  cursor: pointer; font-family: 'Heebo', sans-serif;
+  transition: all 0.15s; margin-top: 12px;
+}
+.wa-share-btn:hover { background: #22543a; }
+
+/* מודל */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+  display: flex; align-items: flex-end; justify-content: center;
+  z-index: 100; backdrop-filter: blur(4px);
+}
+.modal-box {
+  background: var(--surface); border-radius: 20px 20px 0 0;
+  padding: 24px 20px 32px; width: 100%; max-width: 480px;
+  border-top: 1px solid var(--border); max-height: 85vh; overflow-y: auto;
+}
+.modal-title { font-size: 17px; font-weight: 900; margin-bottom: 6px; }
+.modal-sub   { font-size: 13px; color: var(--muted); margin-bottom: 18px; }
+.modal-input {
+  width: 100%; padding: 13px 16px; border-radius: 12px;
+  border: 2px solid var(--border); background: var(--bg);
+  color: var(--text); font-size: 18px; font-family: 'Heebo', sans-serif;
+  outline: none; letter-spacing: 1px; text-align: center; margin-bottom: 8px;
+}
+.modal-input:focus { border-color: var(--wa); }
+.modal-error { color: var(--red); font-size: 12px; text-align: center; min-height: 18px; margin-bottom: 10px; }
+.modal-send {
+  width: 100%; padding: 14px; border-radius: 14px; background: var(--wa);
+  border: none; color: white; font-size: 16px; font-weight: 700;
+  cursor: pointer; font-family: 'Heebo', sans-serif; margin-bottom: 10px;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.modal-send:hover { background: #20b858; }
+.modal-cancel {
+  width: 100%; padding: 11px; border-radius: 12px; background: none;
+  border: 1.5px solid var(--border); color: var(--muted); font-size: 14px;
+  cursor: pointer; font-family: 'Heebo', sans-serif;
+}
+.modal-cancel:hover { border-color: var(--accent); color: var(--accent); }
+
+.hidden { display: none !important; }
+
+/* sources */
+.source-item {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 8px; padding: 5px 10px; margin: 4px 0;
+  font-size: 11px; direction: ltr; color: var(--muted);
+}
+.source-item a { color: var(--accent); text-decoration: none; }
+</style>
+</head>
+<body>
+<div class="page-wrap">
+
+<!-- ══ SIDEBAR (desktop only) ══ -->
+<div class="sidebar">
+  <div class="sidebar-logo">GT Robot <span>Helper</span></div>
+  <div class="sidebar-tag">🤖 כלי עזר לטכנאי גימלאטק</div>
+  <div class="sidebar-desc">אבחון ופתרון תקלות בשואבי רובוט — בסיוע בינה מלאכותית ומאגר ידע מקצועי.</div>
+  <div class="sidebar-steps">
+    <div class="sidebar-step"><div class="sidebar-step-num">1</div><div class="sidebar-step-text">בחרו מותג</div></div>
+    <div class="sidebar-step"><div class="sidebar-step-num">2</div><div class="sidebar-step-text">בחרו דגם</div></div>
+    <div class="sidebar-step"><div class="sidebar-step-num">3</div><div class="sidebar-step-text">תארו הבעיה — קבלו פתרון</div></div>
+  </div>
+  <div style="margin-top:auto;padding-top:40px;font-size:11px;color:#334155;line-height:1.7">
+    © 2026 רויטל פלד / Revital Peled<br>All Rights Reserved<br>
+    <span style="color:#1e3a5f">נבנה בסיוע Claude AI</span>
+  </div>
+</div>
+
+<!-- ══ APP ══ -->
+<div class="app">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="logo-row">
+      <span class="logo-icon">🤖</span>
+      <span class="logo-text">GT Robot <span>Helper</span></span>
+      <button class="about-link" onclick="document.getElementById('about-modal').classList.remove('hidden')">© Revital Peled 2026</button>
+    </div>
+    <div class="breadcrumb" id="breadcrumb"></div>
+  </div>
+
+  <div class="body">
+
+    <!-- ══ מסך 1: בחירת מותג ══ -->
+    <div class="screen active" id="s1">
+      <div class="screen-title">באיזה רובוט?</div>
+      <div class="screen-sub">בחרו את מותג השואב</div>
+      <div class="brand-grid">
+        <div class="brand-card" onclick="selectBrand('Ecovacs','🟦','Ecovacs','T/X/N series')">
+          <span class="b-icon">🟦</span>
+          <div class="b-label">Ecovacs</div>
+          <div class="b-sub">Deebot T/X/N</div>
+        </div>
+        <div class="brand-card" onclick="selectBrand('Roborock','🔴','Roborock','Saros / S / Q')">
+          <span class="b-icon">🔴</span>
+          <div class="b-label">Roborock</div>
+          <div class="b-sub">Saros / S / Q</div>
+        </div>
+        <div class="brand-card" onclick="selectBrand('Dreame','🟡','Dreame','X / L / Matrix')">
+          <span class="b-icon">🟡</span>
+          <div class="b-label">Dreame</div>
+          <div class="b-sub">X / L / Matrix</div>
+        </div>
+        <div class="brand-card" onclick="selectBrand('Narwal','🩵','Narwal','Flow / Freo')">
+          <span class="b-icon">🩵</span>
+          <div class="b-label">Narwal</div>
+          <div class="b-sub">Flow / Freo</div>
+        </div>
+        <div class="brand-card" onclick="selectBrand('Xiaomi','🟠','Xiaomi','X / S series')">
+          <span class="b-icon">🟠</span>
+          <div class="b-label">Xiaomi</div>
+          <div class="b-sub">X / S series</div>
+        </div>
+        <div class="brand-card" onclick="selectBrand('eufy','🟢','eufy','X / RoboVac')">
+          <span class="b-icon">🟢</span>
+          <div class="b-label">eufy</div>
+          <div class="b-sub">X / RoboVac</div>
+        </div>
+        <div class="brand-card" onclick="selectBrand('iRobot','⚫','iRobot','Roomba / Braava')">
+          <span class="b-icon">⚫</span>
+          <div class="b-label">iRobot</div>
+          <div class="b-sub">Roomba / Braava</div>
+        </div>
+        <div class="brand-card" onclick="selectBrand('Other','⬜','מותג אחר','')">
+          <span class="b-icon">⬜</span>
+          <div class="b-label">אחר</div>
+          <div class="b-sub">מותג לא מוכר</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ מסך 2: בחירת דגם ══ -->
+    <div class="screen" id="s2">
+      <button class="btn-back" onclick="goBack(1)">← חזרה</button>
+      <div class="screen-title" id="s2-title"></div>
+      <div class="screen-sub">בחרו את הדגם</div>
+      <div class="model-list" id="model-list"></div>
+    </div>
+
+    <!-- ══ מסך 3: שאלה ══ -->
+    <div class="screen" id="s3">
+      <button class="btn-back" onclick="goBack(2)">← חזרה</button>
+
+      <!-- קוד שגיאה -->
+      <div class="error-input-row">
+        <span class="err-label">🚨 קוד שגיאה:</span>
+        <input type="text" id="error-input" placeholder="Err6 / F2 / 004 (אופציונלי)"
+          autocomplete="off" autocorrect="off" spellcheck="false">
+      </div>
+
+      <!-- תיבת חיפוש -->
+      <div class="search-box">
+        <div class="search-go" id="search-go-btn" onclick="doSearch()">🔍</div>
+        <input type="text" id="search-input" placeholder="תארו את הבעיה..."
+          oninput="onInput()" onkeydown="if(event.key==='Enter')doSearch()">
+      </div>
+
+      <!-- נושאים -->
+      <div class="topics-row" id="topics-row"></div>
+
+      <!-- תוצאות מאגר -->
+      <div id="db-results-area"></div>
+
+      <!-- תשובת AI -->
+      <div id="ai-area" class="hidden">
+        <div class="ai-box">
+          <div class="ai-header">
+            <span class="ai-badge">✨ בינה מלאכותית</span>
+          </div>
+          <div id="ai-typing" class="ai-typing hidden">
+            <div class="dots"><span></span><span></span><span></span></div>
+            <span>מחשב תשובה...</span>
+          </div>
+          <div id="ai-content"></div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /body -->
+
+  <!-- WhatsApp bar -->
+  <div class="wa-bar">
+    <a class="wa-btn" href="https://wa.me/972505396068" target="_blank">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+      עזרה מגימלאטק — 0505396068
+    </a>
+  </div>
+
+  <!-- footer -->
+  <div style="text-align:center;padding:10px 18px 6px;border-top:1px solid #1e293b">
+    <button onclick="document.getElementById('about-modal').classList.remove('hidden')"
+      style="background:none;border:none;color:#334155;font-size:11px;cursor:pointer;font-family:'Heebo',sans-serif;">
+      © 2026 רויטל פלד &nbsp;·&nbsp; 🛡️ זכויות יוצרים
+    </button>
+  </div>
+  <div style="background:#0c1a2e;border-top:1px solid #1e3a5f;padding:8px 18px;text-align:center;font-size:11px;color:#38bdf8;letter-spacing:0.3px">
+    🛡️ כלי זה מוגן בזכויות יוצרים &nbsp;|&nbsp; © Revital Peled 2026 &nbsp;|&nbsp; All Rights Reserved
+  </div>
+
+  <!-- ══ Modal: אודות ══ -->
+  <div class="modal-overlay hidden" id="about-modal" onclick="if(event.target===this)this.classList.add('hidden')">
+    <div class="modal-box" style="text-align:right">
+      <div class="modal-title">🛡️ GT Robot Helper | GimlaTech</div>
+      <div style="background:#0f172a;border-radius:12px;padding:14px;margin-bottom:14px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:12px;line-height:2">
+          <div style="color:#94a3b8;border-left:1px solid #1e293b;padding-left:12px">
+            <strong style="color:#38bdf8">יוצרת:</strong> רויטל פלד<br>
+            <strong style="color:#38bdf8">שנה:</strong> 2026<br>
+            <strong style="color:#38bdf8">נבנה בסיוע:</strong> Claude AI<br>
+            <strong style="color:#38bdf8">מטרה:</strong> סיוע לטכנאי GimlaTech לאבחן תקלות בשואבי רובוט
+          </div>
+          <div style="color:#64748b;text-align:left;direction:ltr;font-size:11px;line-height:2">
+            <strong style="color:#818cf8">Creator:</strong> Revital Peled<br>
+            <strong style="color:#818cf8">Year:</strong> 2026<br>
+            <strong style="color:#818cf8">Built with:</strong> Claude AI<br>
+            <strong style="color:#818cf8">Purpose:</strong> Help GimlaTech techs diagnose robot vacuum issues
+          </div>
+        </div>
+      </div>
+      <div style="font-size:12px;font-weight:700;color:#475569;margin-bottom:8px;border-bottom:1px solid #1e293b;padding-bottom:6px">📋 תהליך הפיתוח</div>
+      <div style="font-size:11px;color:#64748b;line-height:1.9;margin-bottom:14px">
+        <strong style="color:#475569">שלב א׳:</strong> מאגר ידע — 80+ פתרונות, קודי שגיאה לפי מותג<br>
+        <strong style="color:#475569">שלב ב׳:</strong> ארכיטקטורת 3 מסכים (מותג → דגם → חיפוש)<br>
+        <strong style="color:#475569">שלב ג׳:</strong> שילוב AI חי + Web Search במקורות רשמיים<br>
+        <strong style="color:#475569">שלב ד׳:</strong> עיצוב, WhatsApp, הגנת זכויות
+      </div>
+      <div style="font-size:12px;font-weight:700;color:#475569;margin-bottom:8px;border-bottom:1px solid #1e293b;padding-bottom:6px">⚖️ זכויות יוצרים</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+        <div style="font-size:11px;color:#94a3b8;line-height:1.9;border-left:1px solid #1e293b;padding-left:12px">
+          הרעיון, הלוגיקה והעיצוב שייכים לרויטל פלד.<br>
+          שימוש ב-AI אינו מעביר בעלות.<br>
+          <span style="color:#fca5a5">✋ אין למכור או לטעון לבעלות.</span><br>
+          <span style="color:#fca5a5">✋ שיתוף עם שמירת שם היוצרת בלבד.</span>
+        </div>
+        <div style="font-size:11px;color:#64748b;line-height:1.9;text-align:left;direction:ltr">
+          Concept, logic & design by Revital Peled.<br>
+          AI use does not transfer ownership.<br>
+          <span style="color:#fca5a5">✋ Do not sell or claim ownership.</span><br>
+          <span style="color:#fca5a5">✋ Share only with creator credit.</span>
+        </div>
+      </div>
+      <div style="text-align:center;font-size:11px;color:#334155;margin-bottom:14px">
+        © 2026 Revital Peled · All Rights Reserved
+      </div>
+      <button class="modal-cancel" onclick="document.getElementById('about-modal').classList.add('hidden')">סגור / Close</button>
+    </div>
+  </div>
+
+  <!-- ══ Modal: WhatsApp ══ -->
+  <div class="modal-overlay hidden" id="wa-modal" onclick="if(event.target===this)closePhoneModal()">
+    <div class="modal-box">
+      <div class="modal-title">📲 שלח תשובה בוואטסאפ</div>
+      <div class="modal-sub">הכניסו את מספר הטלפון של המקבל</div>
+      <input class="modal-input" id="wa-phone-input" type="tel" placeholder="050-000-0000"
+        onkeydown="if(event.key==='Enter')sendWANow()">
+      <div class="modal-error" id="wa-modal-error"></div>
+      <button class="modal-send" onclick="sendWANow()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+        שלח עכשיו
+      </button>
+      <button class="modal-cancel" onclick="closePhoneModal()">ביטול</button>
+    </div>
+  </div>
+
+</div><!-- /app -->
+</div><!-- /page-wrap -->
+
+<script>
+// ════════════════════════════════════════
+//  הגדרות
+// ════════════════════════════════════════
+var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxBdvVl8XsN24gU3qxY3iMzEr3SMHui0oicYByT6Z5H0r5y4mdf0_vm3RsOvOM0tw/exec';
+
+var WA_SVG = '<svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>';
+
+// ════════════════════════════════════════
+//  מאגר ידע — 26 פתרונות
+// ════════════════════════════════════════
+var db = [
+  // מברשות
+  {id:'br-1',brand:['Ecovacs','Roborock','Dreame','Narwal','Xiaomi','eufy','iRobot','Other'],
+   cat:'🪥 מברשות',title:'מברשת ראשית תקועה',
+   kw:['מברשת','תקועה','לא מסתובבת','stuck','brush','jammed'],
+   steps:['הפכי את הרובוט ושחרר את כיסוי המברשת (לחיצה + משיכה).',
+          'הוציאי את המברשת והסירי שיער עם המספריים שבערכת הניקוי.',
+          'בדקי שהציר (axle) חופשי ולא עקום.',
+          'החזירי והפעילי — אם עדיין תקועה, אפסי (כיבוי/הדלקה 10 שניות).'],
+   tip:'💡 שיער כרוך הוא הסיבה הנפוצה ביותר — ניקוי שבועי מונע.',
+   warn:'⚠️ אל תפעילי בכוח — עלול לשרוף את המנוע.'},
+  {id:'br-2',brand:['Ecovacs','Roborock','Dreame','Narwal','Xiaomi','eufy','iRobot','Other'],
+   cat:'🪥 מברשות',title:'שיער כרוך סביב המברשת',
+   kw:['שיער','כרוך','hair','tangled','מסתבך'],
+   steps:['כבי את הרובוט לפני הניקוי.',
+          'הוציאי את המברשת מהשקע.',
+          'חתכי את השיער לאורך הציר עם מספריים (יש חריץ מסומן).',
+          'שלפי את השיער ונקי את הסוגריים.'],
+   tip:'💡 ניקוי מומלץ כל 1-2 שבועות בבתים עם שיער.'},
+  {id:'br-3',brand:['Ecovacs','Roborock','Dreame','Narwal','Xiaomi','eufy','iRobot','Other'],
+   cat:'🪥 מברשות',title:'מברשת צד לא מסתובבת',
+   kw:['מברשת צד','side brush','צד','שבורה','כפופה'],
+   steps:['בדקי שהמברשת מחוברת היטב (לחיצה עד קליק).',
+          'נקי את השקע עם קיסם ואלכוהול.',
+          'אם כפופה — יש להחליף (30-50 ₪).'],
+   tip:'💡 אחרי החלפה: הפעל סריקת מיפוי מחדש.'},
+  // שאיבה
+  {id:'su-1',brand:['Ecovacs','Roborock','Dreame','Narwal','Xiaomi','eufy','iRobot','Other'],
+   cat:'💨 שאיבה',title:'שאיבה חלשה',
+   kw:['שאיבה חלשה','לא שואב','weak suction','poor','מפסיק'],
+   steps:['רוקני את מיכל האבק.',
+          'הנערי את הפילטר מחוץ לבית.',
+          'בדקי חסימות בכניסת השאיבה (תחת הרובוט).',
+          'ודאי שכיסוי מיכל האבק סגור לגמרי.'],
+   tip:'💡 מיכל מלא מפחית שאיבה ב-40%.',
+   warn:'⚠️ פילטר רטוב = נזק מוטורי אפשרי.'},
+  {id:'su-2',brand:['Ecovacs','Roborock','Dreame','Narwal','Xiaomi','eufy','iRobot','Other'],
+   cat:'💨 שאיבה',title:'חסימה בצינור השאיבה',
+   kw:['חסימה','סתימה','clog','blockage','תקוע בפנים'],
+   steps:['כבי את הרובוט.',
+          'הוציאי את מיכל האבק.',
+          'בדקי את הצינור הפנימי — השתמשי במוט דק לשחרור.',
+          'הפעילי ובדקי אם הלחץ חזר.'],
+   tip:'💡 גופי זרים (מטבע, אבן) הם סיבה נפוצה.'},
+  // ניווט
+  {id:'nav-1',brand:['Ecovacs','Roborock','Dreame','Narwal','Xiaomi','eufy','iRobot','Other'],
+   cat:'🗺️ ניווט',title:'מיפוי שגוי / מפה לא נכונה',
+   kw:['מיפוי','מפה','mapping','שגוי','לא נכון','מאפה'],
+   steps:['מחקי את המפה באפליקציה (Settings → Map → Delete).',
+          'הנחי את הרובוט בתחנה ופתחי סריקה חדשה.',
+          'ודאי תאורה מספקת.',
+          'הסירי חפצים שזזו מאז הסריקה האחרונה.'],
+   tip:'💡 חכי לסיום מיפוי מלא לפני שליחה לנקות.'},
+  {id:'nav-2',brand:['Ecovacs','Roborock','Dreame','Narwal','Xiaomi','eufy','iRobot','Other'],
+   cat:'🗺️ ניווט',title:'הרובוט נתקע / סובב במקום',
+   kw:['נתקע','תקוע','סובב','עיגולים','circles','stuck','loop'],
+   steps:['הרימי והניחי במיקום אחר.',
+          'נקי חיישני מניעת נפילה (תחתית) — לכלוך גורם בלבול.',
+          'בדקי שאין שטיח עם דוגמה מבלבלת.',
+          'מחקי מפה ובני מחדש.'],
+   tip:'💡 פינות עיוורות הן מלכודת נפוצה.'},
+  {id:'nav-3',brand:['Ecovacs','Roborock','Dreame','Narwal','Xiaomi','eufy','iRobot','Other'],
+   cat:'🗺️ ניווט',title:'לא חוזר לתחנת טעינה',
+   kw:['לא חוזר','תחנה','dock','לא מוצא','docking'],
+   steps:['ודאי שהתחנה מחוברת לחשמל ונורית דולקת.',
+          'פנה 50 ס"מ משני הצדדים ו-1.5 מ׳ מלפנים.',
+          'נקי חיישני IR של התחנה במטלית יבשה.',
+          'נתקי תחנה 30 שניות ← החזירי.'],
+   tip:'💡 אור שמש ישיר על התחנה מבלבל חיישני IR.'},
+  // טעינה
+  {id:'ch-1',brand:['Ecovacs','Roborock','Dreame','Narwal','Xiaomi','eufy','iRobot','Other'],
+   cat:'🔋 טעינה',title:'הרובוט לא נטען',
+   kw:['לא נטען','טעינה','charging','מגעים','לא טוען'],
+   steps:['נקי מגעי הטעינה (פסים כסופים) ברובוט ובתחנה — אלכוהול + מטלית.',
+          'ודאי שכבל התחנה מחובר ישירות לשקע (לא מאריך).',
+          'נסי תחנה אחרת אם אפשר.'],
+   tip:'💡 מגעים מחוממים/שחורים = יש להחליף תחנה.',
+   warn:'⚠️ אל תטעיני בצורה שלא הומלצה ביצרן.'},
+  {id:'ch-2',brand:['Ecovacs','Roborock','Dreame','Narwal','Xiaomi','eufy','iRobot','Other'],
+   cat:'🔋 טעינה',title:'סוללה מתרוקנת מהר',
+   kw:['סוללה','מתרוקנת','מהר','battery','זמן ריצה','קצר'],
+   steps:['הפחיתי עצמת שאיבה (Max/Turbo מרוקן מהר).',
+          'בדקי גיל הרובוט — סוללה נמשכת 2-3 שנים.',
+          'אם זמן ריצה <30 דקות (אמור 90+) — יש להחליף סוללה.'],
+   tip:'💡 פני לתמיכה לקבלת סוללה חלופית רשמית.'},
+  // ניגוב
+  {id:'mop-1',brand:['Ecovacs','Roborock','Dreame','Narwal','Xiaomi','eufy','iRobot','Other'],
+   cat:'💧 ניגוב',title:'דליפת מים',
+   kw:['דולף','מים','leak','מיכל','רטוב','ריצוף'],
+   steps:['הוציאי מיכל מים ובדקי שהפקק סגור לגמרי.',
+          'ודאי שהמגבת מחוברת נכון.',
+          'מלאי עד הקו המסומן בלבד — מילוי יתר דולף.',
+          'אם דולף מהתחתית — יש סדק, יש להחליף מיכל.'],
+   tip:'💡 מגבת רפויה גם גורמת לריצוף לא אחיד.'},
+  {id:'mop-2',brand:['Ecovacs','Roborock','Dreame','Narwal','Xiaomi','eufy','iRobot','Other'],
+   cat:'💧 ניגוב',title:'לא מנגב / מגבת יבשה',
+   kw:['לא מנגב','יבש','dry','מגבת','לא יוצא מים'],
+   steps:['ודאי שמיכל מים מלא ומוכנס עד קליק.',
+          'בדקי הגדרות ניגוב — עצמת מים: בינונית/גבוהה.',
+          'בדקי שאיטום הסיליקון (gasket) תקין.',
+          'נסי מצב Mop Only ישירות.'],
+   tip:'💡 מצב Eco/Quiet מפחית זרימת מים.'},
+  // חיישנים
+  {id:'sen-1',brand:['Ecovacs','Roborock','Dreame','Narwal','Xiaomi','eufy','iRobot','Other'],
+   cat:'📡 חיישנים',title:'חיישן נפילה — רגישות יתר',
+   kw:['חיישן','נפילה','cliff','מדרגות','נעצר','מפחד','רגיש'],
+   steps:['נקי 4 חיישני התחתית במטלית יבשה.',
+          'אם הרצפה כהה מאוד (שחור מבריק) — זה false positive נפוץ.',
+          'הורידי רגישות ב-1 דרגה בהגדרות אם אפשר.'],
+   tip:'💡 שטיח כהה = הרובוט "חושב" שיש מדרגה.',
+   warn:'⚠️ אל תכבי חיישן נפילה לגמרי — סכנת נפילה.'},
+  {id:'sen-2',brand:['Ecovacs','Roborock','Dreame','Narwal','Xiaomi','eufy','iRobot','Other'],
+   cat:'📡 חיישנים',title:'שגיאת LiDAR / לייזר',
+   kw:['lidar','לייזר','laser','מסתובב','כיפה','מכסה'],
+   steps:['ודאי שהמכסה המסתובב בראש הרובוט חופשי לסיבוב.',
+          'נקי את הכיפה השקופה במטלית רכה.',
+          'ודאי שאין עצמים מעל גובה הרובוט.',
+          'אם ממשיך — אפסי מפה ואתחלי.'],
+   tip:'💡 אבק על הכיפה הוא הסיבה הנפוצה ביותר.'},
+  // רעשים
+  {id:'no-1',brand:['Ecovacs','Roborock','Dreame','Narwal','Xiaomi','eufy','iRobot','Other'],
+   cat:'🔊 רעשים',title:'רעש חזק / חריג',
+   kw:['רעש','קול','חזק','חריג','noise','loud','רועש'],
+   steps:['בדקי שאין גוף זר בפנים (מטבע, אבן) — הנערי בעדינות.',
+          'בדקי מברשת ראשית — שיער גורם לרעש.',
+          'בדקי גלגלים — לכלוך בציר יוצר שריקה.',
+          'רעש רק בשאיבה — ייתכן חסימה בצינור.'],
+   tip:'💡 רעש חדש = לרוב גוף זר נכנס.'},
+  // אפליקציה
+  {id:'app-1',brand:['Ecovacs','Roborock','Dreame','Narwal','Xiaomi','eufy','iRobot','Other'],
+   cat:'📱 אפליקציה',title:'בעיית חיבור Wi-Fi',
+   kw:['wifi','חיבור','לא מתחבר','connection','offline','רשת'],
+   steps:['ודאי שהרובוט ברשת 2.4GHz (לא 5GHz).',
+          'אתחלי את הרובוט (לחיצה ארוכה על Home 5 שניות).',
+          'מחקי את הרובוט מהאפליקציה וחברי מחדש.',
+          'כבי VPN אם פעיל בזמן הגדרה.'],
+   tip:'💡 רוב הרובוטים לא תומכים ב-5GHz.'},
+  // גלגלים
+  {id:'wh-1',brand:['Ecovacs','Roborock','Dreame','Narwal','Xiaomi','eufy','iRobot','Other'],
+   cat:'⚙️ גלגלים',title:'גלגל תקוע',
+   kw:['גלגל','תקוע','wheel','stuck','לא מסתובב'],
+   steps:['הפכי את הרובוט ובדקי שאין שיער/חוט כרוך סביב ציר הגלגל.',
+          'לחצי על הגלגל מטה ושחרר — בדקי suspension.',
+          'נקי את שקע הגלגל בעזרת קיסם.',
+          'אם שבור — יש להחליף.'],
+   tip:'💡 גלגל עם suspension רגיש לשיער הכרוך סביב הציר.'},
+  // תחזוקה
+  {id:'mnt-1',brand:['Ecovacs','Roborock','Dreame','Narwal','Xiaomi','eufy','iRobot','Other'],
+   cat:'🔧 תחזוקה',title:'לוח תחזוקה שוטפת',
+   kw:['תחזוקה','maintenance','ניקוי','לוח','אחזקה'],
+   steps:['יומי: רוקן מיכל אבק.',
+          'שבועי: נקה מברשות וגלגלים.',
+          'חודשי: שטוף פילטר, נקה חיישנים.',
+          'כל 3-6 חודשים: החלף פילטר.',
+          'כל 6-12 חודשים: החלף מברשת ראשית.'],
+   tip:'💡 תחזוקה קבועה מונעת 90% מהתקלות.'},
+];
+
+// ════════════════════════════════════════
+//  קודי שגיאה
+// ════════════════════════════════════════
+var errorCodes = {
+  Ecovacs:  {'001':'חיישן מניעת נפילה','002':'גלגל תקוע','003':'מברשת ראשית חסומה','004':'מיכל אבק מלא','005':'שגיאת LiDAR','006':'בעיית טעינה','007':'מגבת חסומה','008':'בעיית Wi-Fi','009':'מנוע שאיבה','010':'מיכל מים','011':'חיישן קדמי','012':'שגיאת מפה'},
+  Roborock: {'Err1':'לייזר לא מסתובב','Err2':'חיישן קדמי','Err3':'גלגל שמאל','Err4':'גלגל ימין','Err5':'מברשת צד','Err6':'מברשת ראשית חסומה','Err7':'חיישן נפילה','Err8':'סוללה נמוכה','Err9':'מיכל אבק חסר','Err10':'פילטר חסר','Err12':'שגיאת טעינה','Err14':'מיכל מלא','Err17':'שגיאת מפה','Err18':'נתקע'},
+  Dreame:   {'F1':'שגיאת LiDAR','F2':'מברשת ראשית','F3':'גלגל ימין','F4':'גלגל שמאל','F5':'מיכל מלא','F6':'חיישן נפילה','F7':'שגיאת טעינה','F8':'מיכל מים','F9':'חיישן קדמי','F10':'שגיאת מערכת','E1':'סוללה חלשה','E2':'שגיאת Wi-Fi'},
+  Narwal:   {'E001':'מיכל מים ריק','E002':'בעיית ניגוב','E003':'מברשת חסומה','E004':'חיישן נפילה','E005':'שגיאת טעינה','E006':'שגיאת Wi-Fi','E007':'שגיאת שטיפת מגבת'},
+  Xiaomi:   {'Error 1':'גלגל ימין','Error 2':'גלגל שמאל','Error 3':'חיישן מדרגות','Error 4':'חיישן קדמי','Error 5':'מברשת ראשית','Error 6':'מיכל מלא','Error 7':'מיכל חסר','Error 8':'שגיאת LiDAR','Error 9':'שגיאת טעינה'},
+  eufy:     {'E001':'מברשת חסומה','E002':'גלגל תקוע','E003':'חיישן מדרגות','E004':'מיכל מלא','E005':'שגיאת טעינה','E006':'Wi-Fi'},
+  iRobot:   {'Err1':'צד ימין נתקע','Err2':'צד שמאל','Err5':'גלגל','Err6':'גלגל תקוע','Err8':'מברשת תקועה','Err9':'פגוש','Err10':'חיישן','Err11':'חיישן מדרגות','Err17':'חיישן ניווט','Err18':'הרובוט נתקע'},
+};
+
+var TOPICS    = ['🪥 מברשות','💨 שאיבה','🗺️ ניווט','🔋 טעינה','💧 ניגוב','📡 חיישנים','🔊 רעשים','📱 אפליקציה','⚙️ גלגלים','🔧 תחזוקה'];
+var MODELS_DB = {
+  Ecovacs:  [{l:'X9S Pro Omni',y:'2026'},{l:'X9 Pro Omni',y:'2025'},{l:'X8 Pro Omni',y:'2025'},{l:'X5 Omni',y:'2025'},{l:'X2 Omni',y:'2024'},{l:'T90 Pro Omni',y:'2026'},{l:'T50 Max Omni',y:'2025'},{l:'T30 Pro',y:'2024'},{l:'N20 Pro',y:'2024'},{l:'N10 Plus',y:'2023'},{l:'אחר / Other',y:''}],
+  Roborock: [{l:'Saros 10R',y:'2026'},{l:'Saros Z70',y:'2026'},{l:'Saros 20',y:'2026'},{l:'S8 MaxV Ultra',y:'2025'},{l:'S8 Pro Ultra',y:'2024'},{l:'Qrevo S5V',y:'2026'},{l:'Qrevo Curv 2 Flow',y:'2026'},{l:'Qrevo Pro',y:'2025'},{l:'Q7 Max+',y:'2024'},{l:'Q8 Max',y:'2024'},{l:'אחר / Other',y:''}],
+  Dreame:   [{l:'Matrix10 Ultra',y:'2026'},{l:'X60 Max Ultra',y:'2026'},{l:'X50 Ultra',y:'2025'},{l:'X40 Ultra',y:'2025'},{l:'L50 Ultra',y:'2026'},{l:'L40 Ultra',y:'2025'},{l:'L20 Ultra',y:'2024'},{l:'L10s Ultra',y:'2024'},{l:'D10 Plus',y:'2023'},{l:'אחר / Other',y:''}],
+  Narwal:   [{l:'Flow 2 Ultra',y:'2026'},{l:'Flow Ultra',y:'2025'},{l:'Freo Z Ultra',y:'2025'},{l:'Freo X Ultra',y:'2024'},{l:'אחר / Other',y:''}],
+  Xiaomi:   [{l:'X20 Pro',y:'2025'},{l:'X10+',y:'2024'},{l:'S12 Max',y:'2025'},{l:'S10+',y:'2024'},{l:'אחר / Other',y:''}],
+  eufy:     [{l:'X10 Pro Omni',y:'2025'},{l:'X8 Pro',y:'2024'},{l:'Clean X9 Pro',y:'2025'},{l:'RoboVac G30',y:'2023'},{l:'אחר / Other',y:''}],
+  iRobot:   [{l:'Roomba j9+ Combo',y:'2025'},{l:'Roomba j7+',y:'2024'},{l:'Roomba s9+',y:'2023'},{l:'Braava m6',y:'2023'},{l:'אחר / Other',y:''}],
+  Other:    [{l:'לא מוכר / Unknown',y:''}],
+};
+var OFFICIAL  = {Ecovacs:'support.ecovacs.com',Roborock:'support.roborock.com',Dreame:'support.dreametech.com',Narwal:'support.narwal.com',Xiaomi:'support.mi.com',eufy:'support.eufylife.com',iRobot:'irobot.com/support',DJI:'store.dji.com/support'};
+
+// ════════════════════════════════════════
+//  State
+// ════════════════════════════════════════
+var state       = {brand:'',brandLabel:'',model:'',screen:1};
+var activeTopic = null;
+var pendingWAText = '';
+
+// ════════════════════════════════════════
+//  ניווט מסכים
+// ════════════════════════════════════════
+function showScreen(n) {
+  document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
+  document.getElementById('s'+n).classList.add('active');
+  state.screen = n;
+  updateBreadcrumb();
+  window.scrollTo(0,0);
+}
+
+function updateBreadcrumb() {
+  var bc = document.getElementById('breadcrumb');
+  var parts = [];
+  if (state.brand) parts.push('<span class="crumb active">'+state.brandLabel+'</span>');
+  if (state.model) {
+    parts.push('<span class="crumb-sep">›</span>');
+    parts.push('<span class="crumb '+(state.screen===3?'active':'')+'">'+state.model+'</span>');
+  }
+  if (state.screen===3 && document.getElementById('ai-content').innerHTML) {
+    parts.push('<span class="crumb-sep">›</span>');
+    parts.push('<span class="crumb active">פתרון</span>');
+  }
+  bc.innerHTML = parts.join('');
+}
+
+function goBack(toScreen) {
+  if (toScreen===1) { state.model=''; }
+  showScreen(toScreen);
+}
+
+// ════════════════════════════════════════
+//  בחירת מותג + דגם
+// ════════════════════════════════════════
+function selectBrand(id, icon, label, sub) {
+  state.brand      = id;
+  state.brandLabel = icon+' '+label;
+  document.getElementById('s2-title').textContent = label+' — בחרו דגם';
+  buildModelList(id);
+  showScreen(2);
+}
+
+function buildModelList(brand) {
+  var list   = document.getElementById('model-list');
+  var models = MODELS_DB[brand] || MODELS_DB['Other'];
+  list.innerHTML = '';
+  models.forEach(function(m) {
+    var btn = document.createElement('button');
+    btn.className = 'model-btn';
+    btn.innerHTML = '<span class="m-icon">🤖</span><div><div class="m-label">'+m.l+'</div>'+(m.y?'<div class="m-year">'+m.y+'</div>':'')+'</div>';
+    btn.onclick = function(){ selectModel(m.l); };
+    list.appendChild(btn);
+  });
+}
+
+function selectModel(modelLabel) {
+  state.model = modelLabel;
+  buildTopics();
+  document.getElementById('search-input').value = '';
+  document.getElementById('error-input').value  = '';
+  document.getElementById('db-results-area').innerHTML = '';
+  document.getElementById('ai-area').classList.add('hidden');
+  document.getElementById('ai-content').innerHTML = '';
+  activeTopic = null;
+  showScreen(3);
+}
+
+// ════════════════════════════════════════
+//  נושאים
+// ════════════════════════════════════════
+function buildTopics() {
+  var row = document.getElementById('topics-row');
+  row.innerHTML = '';
+  var available = {};
+  db.forEach(function(item) {
+    if (item.brand.indexOf(state.brand) !== -1) available[item.cat] = true;
+  });
+  TOPICS.forEach(function(t) {
+    if (!available[t]) return;
+    var chip = document.createElement('button');
+    chip.className = 'topic-chip';
+    chip.textContent = t;
+    chip.onclick = function(){ toggleTopic(t, chip); };
+    row.appendChild(chip);
+  });
+}
+
+function toggleTopic(topic, el) {
+  document.querySelectorAll('.topic-chip').forEach(function(c){ c.classList.remove('active'); });
+  if (activeTopic === topic) {
+    activeTopic = null;
+    document.getElementById('search-input').value = '';
+    document.getElementById('db-results-area').innerHTML = '';
+  } else {
+    activeTopic = topic;
+    el.classList.add('active');
+    document.getElementById('search-input').value = '';
+    var matches = db.filter(function(i){ return i.cat===topic && i.brand.indexOf(state.brand)!==-1; });
+    renderDBResults(matches, '', topic);
+  }
+  document.getElementById('ai-area').classList.add('hidden');
+}
+
+// ════════════════════════════════════════
+//  חיפוש
+// ════════════════════════════════════════
+function onInput() {
+  var q = document.getElementById('search-input').value.trim();
+  if (q) {
+    activeTopic = null;
+    document.querySelectorAll('.topic-chip').forEach(function(c){ c.classList.remove('active'); });
+    renderDBResults(searchDB(q), q, null);
+    document.getElementById('ai-area').classList.add('hidden');
+  } else {
+    document.getElementById('db-results-area').innerHTML = '';
+  }
+}
+
+function searchDB(q) {
+  if (!q) return [];
+  var words = q.toLowerCase().split(/\s+/);
+  var scored = [];
+  db.forEach(function(item) {
+    if (item.brand.indexOf(state.brand) === -1) return;
+    var text = (item.title+' '+item.kw.join(' ')).toLowerCase();
+    var sc = 0;
+    words.forEach(function(w){ if (text.indexOf(w)!==-1) sc++; });
+    if (sc>0) scored.push({item:item, sc:sc});
+  });
+  scored.sort(function(a,b){ return b.sc-a.sc; });
+  return scored.map(function(s){ return s.item; }).slice(0,5);
+}
+
+function renderDBResults(matches, q, label) {
+  var area = document.getElementById('db-results-area');
+  if (!matches.length) { area.innerHTML = q ? '' : '<div style="color:var(--muted);font-size:13px;text-align:center;padding:12px">לא נמצאו תוצאות</div>'; return; }
+  var html = '<div class="results-label">'+(label || matches.length+' תוצאות מהמאגר')+'</div>';
+  matches.forEach(function(item) {
+    var titleH = q ? highlight(item.title,q) : item.title;
+    html += '<div class="result-card" onclick="showAnswer(\''+item.id+'\')"><div class="r-title">'+titleH+'</div><div class="r-meta">'+item.cat+'</div></div>';
+  });
+  area.innerHTML = html;
+}
+
+function highlight(text, q) {
+  var result = text;
+  q.toLowerCase().split(/\s+/).filter(Boolean).forEach(function(w) {
+    result = result.replace(new RegExp('('+w+')','gi'), '<mark>$1</mark>');
+  });
+  return result;
+}
+
+function doSearch() {
+  var q     = document.getElementById('search-input').value.trim();
+  var errIn = document.getElementById('error-input').value.trim();
+  if (!q && !errIn) return;
+  // בדיקת קוד שגיאה
+  if (errIn) {
+    var errDesc = lookupError(state.brand, errIn);
+    if (errDesc) { showErrorResult(errIn, errDesc); return; }
+  }
+  callAI(q || errIn);
+}
+
+// ════════════════════════════════════════
+//  קוד שגיאה
+// ════════════════════════════════════════
+function lookupError(brand, code) {
+  var codes = errorCodes[brand] || {};
+  var cu    = code.trim().toUpperCase();
+  for (var k in codes) {
+    if (k.toUpperCase() === cu || cu.indexOf(k.toUpperCase())!==-1) return codes[k];
+  }
+  return null;
+}
+
+function showErrorResult(code, desc) {
+  document.getElementById('db-results-area').innerHTML = '';
+  var aiArea = document.getElementById('ai-area');
+  aiArea.classList.remove('hidden');
+  document.getElementById('ai-typing').classList.add('hidden');
+  var steps = ['בדקי את תיאור השגיאה ואתרי את הרכיב המצוין.',
+               'עיני בפתרונות המאגר לתקלה מסוג זה.',
+               'אם הבעיה נמשכת — צרי קשר עם תמיכת '+state.brand+' בכתובת: '+(OFFICIAL[state.brand]||'אתר היצרן')+'.'];
+  var stepsHTML = steps.map(function(s,i){ return '<div class="ai-step"><div class="ai-step-num">'+(i+1)+'</div><div class="ai-step-text">'+s+'</div></div>'; }).join('');
+  var plain = 'שגיאה '+code.toUpperCase()+': '+desc+'\n\n'+steps.map(function(s,i){ return (i+1)+'. '+s; }).join('\n');
+  pendingWAText = buildWAText('שגיאה '+code.toUpperCase(), steps, '');
+  document.getElementById('ai-content').innerHTML =
+    '<span class="err-badge">🚨 קוד שגיאה '+escH(code.toUpperCase())+'</span>' +
+    '<div style="font-size:16px;font-weight:700;margin-bottom:14px">'+escH(desc)+'</div>' +
+    '<div class="answer-steps">'+stepsHTML+'</div>' +
+    copyBtn(plain) + waShareBtn() +
+    '<button class="btn-reset" onclick="resetSearch()">🔄 בעיה חדשה</button>';
+  updateBreadcrumb();
+}
+
+// ════════════════════════════════════════
+//  תשובה מהמאגר
+// ════════════════════════════════════════
+function showAnswer(id) {
+  var item = db.find(function(x){ return x.id===id; });
+  if (!item) return;
+  document.getElementById('db-results-area').innerHTML = '';
+  var aiArea = document.getElementById('ai-area');
+  aiArea.classList.remove('hidden');
+  document.getElementById('ai-typing').classList.add('hidden');
+  var stepsHTML = item.steps.map(function(s,i){
+    return '<div class="ai-step"><div class="ai-step-num">'+(i+1)+'</div><div class="ai-step-text">'+escH(s)+'</div></div>';
+  }).join('');
+  var plain = item.title+'\n\n'+item.steps.map(function(s,i){ return (i+1)+'. '+s; }).join('\n')+(item.tip?'\n\n'+item.tip:'');
+  pendingWAText = buildWAText(item.title, item.steps, item.tip||'');
+  document.getElementById('ai-content').innerHTML =
+    '<span class="db-badge">✅ מהמאגר</span>' +
+    '<div style="font-size:16px;font-weight:700;margin-bottom:14px">'+escH(item.title)+'</div>' +
+    '<div class="answer-steps">'+stepsHTML+'</div>' +
+    (item.tip ? '<div class="ai-tip">'+escH(item.tip)+'</div>' : '') +
+    (item.warn? '<div class="ai-warn">'+escH(item.warn)+'</div>': '') +
+    copyBtn(plain) + waShareBtn() +
+    '<button class="btn-reset" onclick="resetSearch()">🔄 בעיה חדשה</button>';
+  updateBreadcrumb();
+}
+
+// ════════════════════════════════════════
+//  קריאת AI דרך Apps Script
+// ════════════════════════════════════════
+function callAI(question) {
+  var aiArea = document.getElementById('ai-area');
+  aiArea.classList.remove('hidden');
+  document.getElementById('ai-typing').classList.remove('hidden');
+  document.getElementById('ai-content').innerHTML = '';
+  document.getElementById('db-results-area').innerHTML = '';
+
+  var systemPrompt =
+    'אתה טכנאי מומחה לשואבי רובוט, עוזר לטכנאי GimlaTech. ' +
+    'המשתמש עובד עם: '+state.brandLabel+' / '+state.model+'. ' +
+    'ענה בעברית, קצר וברור, בדיוק בפורמט:\n' +
+    'שורה ראשונה: **כותרת קצרה**\n' +
+    'שורות 1. 2. 3. (עד 4): צעדי פתרון\n' +
+    'שורה אחרונה מתחילה ב-💡: טיפ קצר\n' +
+    'ללא מבוא. ענה בקצרה.';
+
+  var payload = {
+    question:     question,
+    systemPrompt: systemPrompt,
+    brand:        state.brand,
+    model:        state.model,
+    device:       state.brandLabel,
+    os:           state.model,
+  };
+
+  // Apps Script: GET עם query params עובד; POST+JSON גורם לבעיית CORS מדפדפן
+  var qs = '?question=' + encodeURIComponent(question) +
+           '&system='   + encodeURIComponent(payload.systemPrompt) +
+           '&brand='    + encodeURIComponent(state.brand) +
+           '&model='    + encodeURIComponent(state.model);
+
+  fetch(APPS_SCRIPT_URL + qs)
+  .then(function(r){ return r.json(); })
+  .then(function(data) {
+    document.getElementById('ai-typing').classList.add('hidden');
+    var text = '';
+    if      (data.answer)                     text = data.answer;
+    else if (data.content && data.content[0]) text = data.content[0].text || '';
+    else if (data.error)                      text = '⚠️ שגיאה: ' + (data.error.message || 'נסי שוב');
+    if (text) renderAIResponse(text, question);
+    else renderError();
+  })
+  .catch(function() {
+    document.getElementById('ai-typing').classList.add('hidden');
+    renderError();
+  });
+}
+
+function renderError() {
+  document.getElementById('ai-content').innerHTML =
+    '<div class="ai-error">⚠️ לא ניתן להתחבר. בדקי אינטרנט ונסי שוב.</div>' +
+    '<button class="btn-reset" onclick="resetSearch()" style="margin-top:14px">🔄 נסי שוב</button>';
+}
+
+function renderAIResponse(text, question) {
+  var lines = text.split('\n').map(function(l){ return l.trim(); }).filter(Boolean);
+  var title = '', steps = [], tip = '';
+  lines.forEach(function(line) {
+    if      (line.startsWith('**') && line.endsWith('**')) title = line.replace(/\*\*/g,'');
+    else if (/^[1-4]\.\s/.test(line))                     steps.push(line.replace(/^[1-4]\.\s/,''));
+    else if (line.startsWith('💡'))                        tip   = line;
+    else if (!title && steps.length===0)                   title = line.replace(/\*\*/g,'');
+  });
+  var stepsHTML = steps.map(function(s,i){
+    return '<div class="ai-step"><div class="ai-step-num">'+(i+1)+'</div><div class="ai-step-text">'+escH(s)+'</div></div>';
+  }).join('');
+  var plain = title+(steps.length?'\n\n'+steps.map(function(s,i){ return (i+1)+'. '+s; }).join('\n'):'')+(tip?'\n\n'+tip:'');
+  if (!plain.trim()) plain = text;
+  pendingWAText = buildWAText(title||question, steps, tip);
+  var html = '';
+  if (title) html += '<div style="font-size:16px;font-weight:700;margin-bottom:14px;color:var(--text)">'+escH(title)+'</div>';
+  if (steps.length) html += '<div class="answer-steps">'+stepsHTML+'</div>';
+  if (!title && !steps.length) html += '<div style="font-size:14px;color:#cbd5e1;line-height:1.8;white-space:pre-wrap">'+escH(text)+'</div>';
+  if (tip) html += '<div class="ai-tip">'+escH(tip)+'</div>';
+  html += copyBtn(plain) + waShareBtn();
+  html += '<button class="btn-reset" onclick="resetSearch()">🔄 בעיה חדשה</button>';
+  document.getElementById('ai-content').innerHTML = html;
+  updateBreadcrumb();
+}
+
+// ════════════════════════════════════════
+//  כפתורי עזר
+// ════════════════════════════════════════
+function copyBtn(text) {
+  var safe = text.replace(/\\/g,'\\\\').replace(/`/g,'\\`').replace(/\$/g,'\\$');
+  return '<button class="copy-btn" style="margin-top:12px;width:100%" onclick="'+
+    'navigator.clipboard.writeText(`'+safe+'`).then(function(){'+
+    'this.innerText=\'✓ הועתק!\';var _=this;setTimeout(function(){_.innerText=\'📋 העתק\'},2000)'+
+    '}.bind(this))">📋 העתק</button>';
+}
+
+function waShareBtn() {
+  return '<button class="wa-share-btn" onclick="openPhoneModal()">'+WA_SVG+' שלח תשובה בוואטסאפ</button>';
+}
+
+function buildWAText(title, steps, tip) {
+  var lines = ['🤖 *GT Robot Helper — '+title+'*',''];
+  steps.forEach(function(s,i){ lines.push((i+1)+'. '+s); });
+  if (tip) lines.push('',tip);
+  lines.push('','📱 '+state.brandLabel+' · '+state.model);
+  return encodeURIComponent(lines.join('\n'));
+}
+
+function escH(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ════════════════════════════════════════
+//  WhatsApp modal
+// ════════════════════════════════════════
+function openPhoneModal() {
+  document.getElementById('wa-modal').classList.remove('hidden');
+  document.getElementById('wa-phone-input').value = '';
+  document.getElementById('wa-phone-input').focus();
+  document.getElementById('wa-modal-error').textContent = '';
+}
+function closePhoneModal() { document.getElementById('wa-modal').classList.add('hidden'); }
+function sendWANow() {
+  var raw = document.getElementById('wa-phone-input').value.trim().replace(/\D/g,'');
+  var err = document.getElementById('wa-modal-error');
+  if (raw.length < 9) { err.textContent = 'נא להכניס מספר תקין'; return; }
+  var intl = raw.startsWith('0') ? '972'+raw.slice(1) : raw;
+  window.open('https://wa.me/'+intl+'?text='+pendingWAText,'_blank');
+  closePhoneModal();
+}
+
+function resetSearch() {
+  document.getElementById('search-input').value = '';
+  document.getElementById('error-input').value  = '';
+  document.getElementById('db-results-area').innerHTML = '';
+  document.getElementById('ai-area').classList.add('hidden');
+  document.getElementById('ai-content').innerHTML = '';
+  activeTopic = null;
+  document.querySelectorAll('.topic-chip').forEach(function(c){ c.classList.remove('active'); });
+  updateBreadcrumb();
+}
+</script>
+</body>
+</html>
