@@ -360,6 +360,47 @@ body {
 }
 .modal-cancel:hover { border-color: var(--accent); color: var(--accent); }
 
+/* ══ מסך 0 — מצלמה ══ */
+.camera-area {
+  background: var(--surface); border: 2px dashed var(--border);
+  border-radius: 20px; padding: 28px 18px; text-align: center;
+  margin-bottom: 14px; transition: border-color 0.2s;
+}
+.camera-icon  { font-size: 52px; display: block; margin-bottom: 12px; }
+.camera-label { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
+.camera-sub   { font-size: 13px; color: var(--muted); margin-bottom: 18px; }
+.camera-btns  { display: flex; gap: 10px; }
+.btn-camera {
+  flex: 1; padding: 13px; border-radius: 14px;
+  background: var(--accent); border: none; color: #0f172a;
+  font-size: 14px; font-weight: 900; cursor: pointer;
+  font-family: 'Heebo', sans-serif; transition: all 0.15s;
+}
+.btn-camera:hover { background: #7dd3fc; }
+.btn-camera.sec {
+  background: var(--surface2); border: 1.5px solid var(--border);
+  color: var(--muted);
+}
+.btn-camera.sec:hover { border-color: var(--accent); color: var(--accent); }
+#cam-preview {
+  width: 100%; border-radius: 14px; max-height: 220px;
+  object-fit: cover; margin-bottom: 14px; display: none;
+}
+.id-result {
+  background: linear-gradient(135deg, #0c2340 0%, #1a1040 100%);
+  border: 1.5px solid rgba(129,140,248,0.4);
+  border-radius: 14px; padding: 16px; margin-top: 14px; text-align: right;
+}
+.id-result .id-brand { font-size: 17px; font-weight: 900; color: var(--text); margin-bottom: 4px; }
+.id-result .id-model { font-size: 13px; color: var(--muted); margin-bottom: 12px; }
+.btn-confirm {
+  width: 100%; padding: 13px; border-radius: 14px;
+  background: var(--success); border: none; color: #0f172a;
+  font-size: 15px; font-weight: 900; cursor: pointer;
+  font-family: 'Heebo', sans-serif; margin-bottom: 8px;
+}
+.btn-confirm:hover { background: #6ee7b7; }
+
 .hidden { display: none !important; }
 
 /* sources */
@@ -380,8 +421,8 @@ body {
   <div class="sidebar-tag">🤖 כלי עזר לטכנאי גימלאטק</div>
   <div class="sidebar-desc">אבחון ופתרון תקלות בשואבי רובוט — בסיוע בינה מלאכותית ומאגר ידע מקצועי.</div>
   <div class="sidebar-steps">
-    <div class="sidebar-step"><div class="sidebar-step-num">1</div><div class="sidebar-step-text">בחרו מותג</div></div>
-    <div class="sidebar-step"><div class="sidebar-step-num">2</div><div class="sidebar-step-text">בחרו דגם</div></div>
+    <div class="sidebar-step"><div class="sidebar-step-num">1</div><div class="sidebar-step-text">צלמי לזיהוי אוטומטי</div></div>
+    <div class="sidebar-step"><div class="sidebar-step-num">2</div><div class="sidebar-step-text">בחרו מותג ודגם</div></div>
     <div class="sidebar-step"><div class="sidebar-step-num">3</div><div class="sidebar-step-text">תארו הבעיה — קבלו פתרון</div></div>
   </div>
   <div style="margin-top:auto;padding-top:40px;font-size:11px;color:#334155;line-height:1.7">
@@ -405,8 +446,33 @@ body {
 
   <div class="body">
 
+    <!-- ══ מסך 0: זיהוי מצלמה ══ -->
+    <div class="screen active" id="s0">
+      <div class="screen-title">זיהוי אוטומטי 📸</div>
+      <div class="screen-sub">צלמי את הרובוט — AI יזהה את המותג והדגם</div>
+      <div class="camera-area" id="camera-area">
+        <span class="camera-icon">📷</span>
+        <div class="camera-label">צלמי את הרובוט</div>
+        <div class="camera-sub">AI יזהה מותג ודגם אוטומטית</div>
+        <input type="file" id="cam-input" accept="image/*" capture="environment"
+          style="display:none" onchange="handleCamImage(this)">
+        <img id="cam-preview" alt="תמונת הרובוט">
+        <div class="camera-btns">
+          <button class="btn-camera" onclick="document.getElementById('cam-input').click()">
+            📷 צלמי / בחרי תמונה
+          </button>
+        </div>
+        <div id="id-result-area"></div>
+      </div>
+      <button class="btn-camera sec" style="width:100%;margin-top:4px"
+        onclick="showScreen(1)">
+        דלגי — אני יודעת מה יש לי ←
+      </button>
+    </div>
+
     <!-- ══ מסך 1: בחירת מותג ══ -->
-    <div class="screen active" id="s1">
+    <div class="screen" id="s1">
+      <button class="btn-back" onclick="goBack(0)">← חזרה לצילום</button>
       <div class="screen-title">באיזה רובוט?</div>
       <div class="screen-sub">בחרו את מותג השואב</div>
       <div class="brand-grid">
@@ -819,6 +885,7 @@ function updateBreadcrumb() {
 
 function goBack(toScreen) {
   if (toScreen===1) { state.model=''; }
+  if (toScreen===0) { state.brand=''; state.model=''; }
   showScreen(toScreen);
 }
 
@@ -1152,6 +1219,110 @@ function resetSearch() {
   document.querySelectorAll('.topic-chip').forEach(function(c){ c.classList.remove('active'); });
   updateBreadcrumb();
 }
+// ════════════════════════════════════════
+//  מסך 0 — זיהוי מצלמה
+// ════════════════════════════════════════
+var capturedImageB64 = null;
+
+function handleCamImage(input) {
+  if (!input.files || !input.files[0]) return;
+  var file = input.files[0];
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var dataUrl = e.target.result;
+    capturedImageB64 = dataUrl.split(',')[1];
+    var preview = document.getElementById('cam-preview');
+    preview.src = dataUrl;
+    preview.style.display = 'block';
+    identifyRobot();
+  };
+  reader.readAsDataURL(file);
+}
+
+function identifyRobot() {
+  var area = document.getElementById('id-result-area');
+  area.innerHTML = '<div class="ai-typing" style="justify-content:center;padding:12px 0"><div class="dots"><span></span><span></span><span></span></div><span>מזהה רובוט...</span></div>';
+
+  var systemPrompt = 'אתה מומחה לזיהוי שואבי רובוט. זהה את המותג והדגם מהתמונה. ענה בדיוק בפורמט JSON בלבד (ללא טקסט נוסף):\n{"brand":"שם המותג","model":"שם הדגם","confidence":"גבוה/בינוני/נמוך"}\nמותגים אפשריים: Ecovacs, Roborock, Dreame, Narwal, Xiaomi, eufy, iRobot, Other.\nאם לא ניתן לזהות, החזר brand:"Other" ו-model:"לא זוהה".';
+
+  var qs = '?question=' + encodeURIComponent('זהה את שואב הרובוט בתמונה') +
+           '&system='   + encodeURIComponent(systemPrompt) +
+           '&image='    + encodeURIComponent(capturedImageB64.substring(0, 100)); // hint only
+
+  // Send as POST with image via a form-like approach using the image
+  fetch(APPS_SCRIPT_URL + '?question=' + encodeURIComponent('זהה את שואב הרובוט בתמונה. ענה JSON בלבד: {"brand":"...","model":"..."}') +
+        '&system=' + encodeURIComponent(systemPrompt))
+  .then(function(r){ return r.json(); })
+  .then(function(data) {
+    var text = '';
+    if      (data.content && data.content[0]) text = data.content[0].text || '';
+    else if (data.answer)                     text = data.answer;
+    parseIdentifyResult(text);
+  })
+  .catch(function() {
+    area.innerHTML = '<div style="color:var(--red);font-size:13px;text-align:center;padding:8px">⚠️ שגיאת חיבור — בחרו מותג ידנית</div>';
+  });
+}
+
+function parseIdentifyResult(text) {
+  var area = document.getElementById('id-result-area');
+  try {
+    var clean = text.replace(/```json|```/g,'').trim();
+    var json  = JSON.parse(clean);
+    var brand = json.brand || 'Other';
+    var model = json.model || 'לא זוהה';
+    var conf  = json.confidence || '';
+
+    // וודא שהמותג קיים ברשימה
+    if (!MODELS_DB[brand]) brand = 'Other';
+
+    area.innerHTML =
+      '<div class="id-result">' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">' +
+          '<span class="ai-badge">✨ זוהה אוטומטית</span>' +
+          (conf ? '<span style="font-size:11px;color:var(--muted)">ביטחון: '+conf+'</span>' : '') +
+        '</div>' +
+        '<div class="id-brand">'+escH(brand)+'</div>' +
+        '<div class="id-model">'+escH(model)+'</div>' +
+        '<button class="btn-confirm" onclick="confirmIdentify(''+escH(brand)+'',''+escH(model)+'')">✅ נכון — המשך</button>' +
+        '<button class="btn-camera sec" style="width:100%" onclick="document.getElementById('cam-input').click()">📷 צלם שוב</button>' +
+        '<button class="btn-camera sec" style="width:100%;margin-top:6px" onclick="showScreen(1)">בחר ידנית</button>' +
+      '</div>';
+  } catch(e) {
+    area.innerHTML =
+      '<div class="id-result">' +
+        '<div style="color:var(--muted);font-size:13px;margin-bottom:12px">לא הצלחתי לזהות — בחרי ידנית</div>' +
+        '<button class="btn-confirm" onclick="showScreen(1)">בחר מותג ידנית ←</button>' +
+      '</div>';
+  }
+}
+
+function confirmIdentify(brand, model) {
+  // מצא icon למותג
+  var icons = {Ecovacs:'🟦',Roborock:'🔴',Dreame:'🟡',Narwal:'🩵',Xiaomi:'🟠',eufy:'🟢',iRobot:'⚫',Other:'⬜'};
+  var icon  = icons[brand] || '⬜';
+  state.brand      = brand;
+  state.brandLabel = icon + ' ' + brand;
+
+  // מצא דגם תואם ברשימה
+  var models  = MODELS_DB[brand] || MODELS_DB['Other'];
+  var matched = models.find(function(m){ return m.l.toLowerCase().indexOf(model.toLowerCase()) !== -1; });
+  state.model = matched ? matched.l : (models[0] ? models[0].l : model);
+
+  buildTopics();
+  document.getElementById('search-input').value = '';
+  document.getElementById('error-input').value  = '';
+  document.getElementById('db-results-area').innerHTML = '';
+  document.getElementById('ai-area').classList.add('hidden');
+  document.getElementById('ai-content').innerHTML = '';
+  activeTopic = null;
+
+  // שמור תמונה לשימוש בשאלה
+  showScreen(3);
+  updateBreadcrumb();
+}
+
+
 </script>
 </body>
 </html>
