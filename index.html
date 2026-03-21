@@ -1288,8 +1288,8 @@ function parseIdentifyResult(text) {
         '</div>' +
         '<div class="id-brand">'+escH(brand)+'</div>' +
         '<div class="id-model">'+escH(model)+'</div>' +
-        '<button class="btn-confirm" onclick="confirmIdentify(''+escH(brand)+'',''+escH(model)+'')">✅ נכון — המשך</button>' +
-        '<button class="btn-camera sec" style="width:100%" onclick="document.getElementById('cam-input').click()">📷 צלם שוב</button>' +
+        '<button class="btn-confirm" onclick="confirmIdentify(\'' + escH(brand) + '\',\'' + escH(model) + '\')">✅ נכון — המשך</button>' +
+        '<button class="btn-camera sec" style="width:100%" onclick="document.getElementById(\'cam-input\').click()">📷 צלם שוב</button>' +
         '<button class="btn-camera sec" style="width:100%;margin-top:6px" onclick="showScreen(1)">בחר ידנית</button>' +
       '</div>';
   } catch(e) {
